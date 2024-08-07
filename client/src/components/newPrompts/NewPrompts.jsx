@@ -12,6 +12,7 @@ const NewPrompts = () => {
     isLoading: false,
     error: "",
     dbData: {},
+    aiData: {},
   });
   const endRef = useRef(null);
 
@@ -22,23 +23,44 @@ const NewPrompts = () => {
   const add = async (text) => {
     setQuestion(text);
 
-    const result = await model.generateContent(text);
-    const response = await result.response;
-    setAnswer(response.text());
+    try {
+      const inputData = Object.entries(img?.aiData).length
+        ? [img?.aiData, text]
+        : [text];
+
+      console.log("Sending data to model:", inputData);
+
+      const result = await model.generateContent(inputData);
+      const response = await result.response;
+      const responseText = await response.text();
+
+      setAnswer(responseText);
+      setImg({
+        isLoading: false,
+        error: "",
+        dbData: {},
+        aiData: {}
+      })
+    } catch (error) {
+      console.error("Error generating content:", error);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const text = e.target.text.value;
     if (!text) return;
-
     add(text);
   };
+
+  const imageSrc = img.dbData?.filePath
+    ? `${import.meta.env.VITE_IMAGE_KIT_ENDPOINT}/${img.dbData.filePath}`
+    : null;
+
   return (
     <>
       {img.isLoading && <div>Loading...</div>}
-      {img.dbData?.filePath && (
+      {imageSrc && (
         <IKImage
           urlEndpoint={import.meta.env.VITE_IMAGE_KIT_ENDPOINT}
           path={img.dbData?.filePath}
@@ -52,14 +74,13 @@ const NewPrompts = () => {
           <Markdown>{answer}</Markdown>
         </div>
       )}
-
       <div className="endChat" ref={endRef}></div>
       <form className="newForm" onSubmit={handleSubmit}>
         <Upload setImg={setImg} />
         <input id="file" type="file" multiple={false} hidden />
         <input type="text" name="text" placeholder="Ask anything...." />
         <button>
-          <img src="/arrow.png" alt="" />
+          <img src="/arrow.png" alt="Submit" />
         </button>
       </form>
     </>
