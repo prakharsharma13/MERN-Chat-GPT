@@ -14,6 +14,22 @@ const NewPrompts = () => {
     dbData: {},
     aiData: {},
   });
+
+  const chat = model.startChat({
+    history: [
+      {
+        role: "user",
+        parts: [{ text: "Hello, I have 2 dogs in my house." }],
+      },
+      {
+        role: "model",
+        parts: [{ text: "Great to meet you. What would you like to know?" }],
+      },
+    ],
+    generationConfig: {
+      // maxOutputTokens: 100,
+    },
+  });
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -23,27 +39,22 @@ const NewPrompts = () => {
   const add = async (text) => {
     setQuestion(text);
 
-    try {
-      const inputData = Object.entries(img?.aiData).length
-        ? [img?.aiData, text]
-        : [text];
-
-      console.log("Sending data to model:", inputData);
-
-      const result = await model.generateContent(inputData);
-      const response = await result.response;
-      const responseText = await response.text();
-
-      setAnswer(responseText);
-      setImg({
-        isLoading: false,
-        error: "",
-        dbData: {},
-        aiData: {}
-      })
-    } catch (error) {
-      console.error("Error generating content:", error);
+    const result = await chat.sendMessageStream(
+      Object.entries(img?.aiData).length ? [img?.aiData, text] : [text]
+    );
+    let accumulatedText = "";
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      console.log(chunkText);
+      accumulatedText += chunkText;
+      setAnswer(accumulatedText);
     }
+    setImg({
+      isLoading: false,
+      error: "",
+      dbData: {},
+      aiData: {},
+    });
   };
 
   const handleSubmit = async (e) => {
