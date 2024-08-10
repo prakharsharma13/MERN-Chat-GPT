@@ -61,7 +61,8 @@ const NewPrompts = () => {
     e.preventDefault();
     const text = e.target.text.value;
     if (!text) return;
-    add(text);
+    add(text); 
+    
   };
 
   const imageSrc = img.dbData?.filePath
